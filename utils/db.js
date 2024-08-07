@@ -1,40 +1,52 @@
 import { MongoClient } from 'mongodb';
 
-const host = process.env.DB_HOST || 'localhost';
-const port = process.env.DB_PORT || 27017;
-const database = process.env.DB_DATABASE || 'files_manager';
-const url = `mongodb://${host}:${port}/`;
-
+/**
+ * A mongoDB connection class.
+ */
 class DBClient {
   constructor() {
-    this.db = null;
-    MongoClient.connect(url, { useUnifiedTopology: true }, (error, client) => {
-      if (error) console.log(error);
-      this.db = client.db(database);
-      this.db.createCollection('users');
-      this.db.createCollection('files');
-    });
+    /**
+     * The class constructor...
+     */
+    this.host = process.env.DB_HOST || 'localhost';
+    this.port = process.env.DB_PORT || 27017;
+    this.database = process.env.DB_DATABASE || 'files_manager';
+    this.mongoURI = `mongodb://${this.host}:${this.port}`;
+
+    this.client = new MongoClient(this.mongoURI, { useUnifiedTopology: true });
+    this.client.connect();
+    this.db = this.client.db(this.database);
   }
 
   isAlive() {
-    return !!this.db;
+    /**
+     * A method that checks the life of a connection.
+     * @return true if the connection is alive, false otherwise.
+     */
+    return this.client.topology.isConnected();
   }
 
   async nbUsers() {
-    return this.db.collection('users').countDocuments();
-  }
-
-  async getUser(query) {
-    console.log('QUERY IN DB.JS', query);
-    const user = await this.db.collection('users').findOne(query);
-    console.log('GET USER IN DB.JS', user);
-    return user;
+    /**
+     * A method that returns the number of documents in the collection 'users'.
+     */
+    const usersCollection = this.db.collection('users');
+    const documentsCount = await usersCollection.countDocuments();
+    return documentsCount;
   }
 
   async nbFiles() {
-    return this.db.collection('files').countDocuments();
+    /**
+     * A method that returns the number of documents in the collection 'files'.
+     */
+    const filesCollection = this.db.collection('files');
+    const documentsCount = await filesCollection.countDocuments();
+    return documentsCount;
   }
 }
 
-const dbClient = new DBClient();
-export default dbClient;
+/**
+ * Exporting an instance...
+ */
+const redisClient = new DBClient();
+export default redisClient;
